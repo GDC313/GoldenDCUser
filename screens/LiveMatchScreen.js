@@ -287,51 +287,181 @@ class LiveMatchScreen extends Component {
     this.state = {
       matchId: this.props.route.params.matchId,
       item: this.props.route.params.item,
+      batsman1Runs: 0,
+      batsman1Bowls: 0,
+      batsman2Runs: 0,
+      batsman2Bowls: 0,
+      runs: 0,
+      extra: 0,
+      wickets: 0,
+      totalOvers: 20,
+      overs: 0,
+      currentOverBowl: 0,
+      currentOverBowlerOver: 0,
+      currentOverBowlRun: 0,
+      currentOverBowlWickets: 0,
+      isFirstSessionCompleted: false,
     };
-    this._setNavigationOptions();
   }
 
-  /**
-   * set navigation options
-   */
-  _setNavigationOptions = () => {
-    this.props.navigation.setOptions({
-      headerTitle: props => <Text
-        {...props}
-        style={{
-          alignSelf: "center",
-          fontFamily: fontStyle.AvenirBlack,
-          fontSize: 16,
-          color: colors.WHITE,
-        }}>{"IND VS AUS"}</Text>,
-      headerTitleStyle: {
-        alignSelf: "center",
-      },
-      headerStyle: {
-        backgroundColor: colors.BLUE_COLOR,
-      },
-      headerBackButtonText: "",
-      headerBackTitleVisible: false,
-      headerTintColor: colors.WHITE,
-      headerRight: () => (
-        <View />
-      ),
-      headerLeft: () => (
-        <TouchableOpacity
-          onPress={() => {
-            this.props.navigation.goBack();
-          }}>
-          <Image
-            resizeMode={"cover"} style={{
-            width: 13, height: 22,
-            marginStart: 15,
-            tintColor: colors.WHITE,
-          }} source={require("../assets/images/ic_back_1.png")} />
-        </TouchableOpacity>
-      ),
-      headerLayoutPreset: "center",
-    });
-  };
+  componentDidMount() {
+    let path = "/liveMatchList/" + this.state.matchId;
+    database().ref(path)
+      .orderByValue()
+      .once("value")
+      .then((result) => {
+        let resultJson = JSON.parse(JSON.stringify(result));
+        console.log("resultJson: ", resultJson);
+        let isFirstSessionCompleted =
+          resultJson.isFirstSessionCompleted !== undefined &&
+          resultJson.isFirstSessionCompleted !== null &&
+          resultJson.isFirstSessionCompleted === true;
+        let overs = resultJson.batFirstTeamId === resultJson.teamFirstId ?
+          resultJson.teamFirstInning.overs : resultJson.teamSecondInning.overs;
+        let wickets = resultJson.batFirstTeamId === resultJson.teamFirstId ?
+          resultJson.teamFirstInning.wickets : resultJson.teamSecondInning.wickets;
+
+        if (!isFirstSessionCompleted) {
+          if (overs >= resultJson.noOfOvers) {
+            console.log("sfsfdsfsdfsdfsdfsdf");
+            isFirstSessionCompleted = true;
+            this.setState({
+              isFirstSessionCompleted: true,
+            });
+          }
+        }
+
+        let wonToss = "";
+        if (resultJson.batFirstTeamId === resultJson.teamFirstId) {
+          wonToss = resultJson.teamFirstName + " won the toss and elected to bat";
+        } else {
+          wonToss = resultJson.teamSecondName + " won the toss and elected to bowl";
+        }
+        let score = resultJson.batFirstTeamId === resultJson.teamFirstId ?
+          resultJson.teamFirstInning.score : resultJson.teamSecondInning.score;
+
+        let extra = resultJson.batFirstTeamId === resultJson.teamFirstId ?
+          resultJson.teamFirstInning.extra ?
+            resultJson.teamFirstInning.extra : 0 :
+          resultJson.teamSecondInning.extra ?
+            resultJson.teamSecondInning.extra : 0;
+
+        let currentOverBowl = resultJson.currentOverBowl !== undefined ? resultJson.currentOverBowl : 0;
+        let currentOverBowlerOver = resultJson.currentOverBowlerOver !== undefined ?
+          resultJson.currentOverBowlerOver : 0;
+        let currentOverBowlWickets = resultJson.wickets !== undefined ?
+          resultJson.wickets : 0;
+        let currentOverBowlRun = resultJson.currentOverBowlRun !== undefined ? resultJson.currentOverBowlRun : 0;
+        if (resultJson.batFirstTeamId === resultJson.teamFirstId) {
+          //TODO: Bowler
+          let bowlerData = resultJson.teamSecondSquad.filter(
+            (item) => item.bowlingIndex === 1);
+          console.log("bowlerData second: ", bowlerData);
+          currentOverBowl = bowlerData[0].currentOverBowl !== undefined ? bowlerData[0].currentOverBowl : 0;
+          currentOverBowlRun = bowlerData[0].currentOverBowlRun !== undefined ? bowlerData[0].currentOverBowlRun : 0;
+          currentOverBowlerOver = bowlerData[0].currentOverBowlerOver !== undefined ? bowlerData[0].currentOverBowlerOver : 0;
+          currentOverBowlWickets = bowlerData[0].wickets !== undefined ? bowlerData[0].wickets : 0;
+        } else {
+          //TODO: Bowler
+          let bowlerData = resultJson.teamFirstSquad.filter(
+            (item) => item.bowlingIndex === 1);
+          console.log("bowlerData second: ", bowlerData);
+          currentOverBowl = bowlerData[0].currentOverBowl !== undefined ? bowlerData[0].currentOverBowl : 0;
+          currentOverBowlerOver = bowlerData[0].currentOverBowlerOver !== undefined ? bowlerData[0].currentOverBowlerOver : 0;
+          currentOverBowlRun = bowlerData[0].currentOverBowlRun !== undefined ? bowlerData[0].currentOverBowlRun : 0;
+          currentOverBowlWickets = bowlerData[0].wickets !== undefined ? bowlerData[0].wickets : 0;
+        }
+
+        let currentOverRun = resultJson.currentOverRun !== undefined ? resultJson.currentOverRun : [];
+        let batsman1Runs = 0;
+        let batsman2Runs = 0;
+        let batsman1Bowls = 0;
+        let batsman2Bowls = 0;
+        let isStriker = false;
+        let strikerPlayerIndex;
+        let nonStrikerPlayerIndex;
+        if (resultJson.batFirstTeamId === resultJson.teamFirstId) {
+          strikerPlayerIndex = resultJson.teamFirstSquad.findIndex(
+            (item) => item.strikerIndex === 1);
+          batsman1Runs = resultJson.teamFirstSquad[strikerPlayerIndex].run !== undefined ?
+            resultJson.teamFirstSquad[strikerPlayerIndex].run : 0;
+          batsman1Bowls = resultJson.teamFirstSquad[strikerPlayerIndex].bowl !== undefined ?
+            resultJson.teamFirstSquad[strikerPlayerIndex].bowl : 0;
+          isStriker = resultJson.teamFirstSquad[strikerPlayerIndex].isStriker !== undefined ?
+            resultJson.teamFirstSquad[strikerPlayerIndex].isStriker : false;
+
+          nonStrikerPlayerIndex = resultJson.teamSecondSquad.findIndex(
+            (item) => item.strikerIndex === 2);
+          batsman2Runs = resultJson.teamFirstSquad[nonStrikerPlayerIndex].run !== undefined ?
+            resultJson.teamFirstSquad[nonStrikerPlayerIndex].run : 0;
+          batsman2Bowls = resultJson.teamFirstSquad[nonStrikerPlayerIndex].bowl !== undefined ?
+            resultJson.teamFirstSquad[nonStrikerPlayerIndex].bowl : 0;
+        } else {
+          strikerPlayerIndex = resultJson.teamSecondSquad.findIndex(
+            (item) => item.strikerIndex === 1);
+          batsman1Runs = resultJson.teamSecondSquad[strikerPlayerIndex].run !== undefined ?
+            resultJson.teamSecondSquad[strikerPlayerIndex].run : 0;
+          batsman1Bowls = resultJson.teamSecondSquad[strikerPlayerIndex].bowl !== undefined ?
+            resultJson.teamSecondSquad[strikerPlayerIndex].bowl : 0;
+          isStriker = resultJson.teamSecondSquad[strikerPlayerIndex].isStriker !== undefined ?
+            resultJson.teamSecondSquad[strikerPlayerIndex].isStriker : false;
+
+          nonStrikerPlayerIndex = resultJson.teamSecondSquad.findIndex(
+            (item) => item.strikerIndex === 2);
+          batsman2Runs = resultJson.teamSecondSquad[nonStrikerPlayerIndex].run !== undefined ?
+            resultJson.teamSecondSquad[nonStrikerPlayerIndex].run : 0;
+          batsman2Bowls = resultJson.teamFirstSquad[nonStrikerPlayerIndex].bowl !== undefined ?
+            resultJson.teamFirstSquad[nonStrikerPlayerIndex].bowl : 0;
+
+        }
+
+        console.log("isStriker: ", isStriker);
+        if (currentOverRun.length >= 6) {
+          this.setState({
+            isStrikerSelection: isStriker,
+            isSelectBowlingModel: true,
+            currentOverRun: [],
+            overs: overs,
+            wickets: wickets,
+            currentOverBowl: 0,
+            currentOverBowlWickets: 0,
+            currentOverBowlRun: currentOverBowlRun,
+            batsman1Runs: batsman1Runs,
+            runs: score,
+            extra: extra,
+            batsman2Runs: batsman2Runs,
+            batsman1Bowls: batsman1Bowls,
+            batsman2Bowls: batsman2Bowls,
+            totalOvers: resultJson.noOfOvers,
+            batFirstTeamId: resultJson.batFirstTeamId,
+            wonToss: wonToss,
+          });
+        } else {
+          alert(score);
+          this.setState({
+            isStrikerSelection: isStriker,
+            batsman1Runs: batsman1Runs,
+            runs: score,
+            extra: extra,
+            currentOverBowl: currentOverBowl,
+            currentOverBowlRun: currentOverBowlRun,
+            currentOverBowlerOver: currentOverBowlerOver,
+            currentOverBowlWickets: currentOverBowlWickets,
+            overs: overs,
+            wickets: wickets,
+            currentOverRun: currentOverRun,
+            batsman2Runs: batsman2Runs,
+            batsman1Bowls: batsman1Bowls,
+            batsman2Bowls: batsman2Bowls,
+            totalOvers: resultJson.noOfOvers,
+            batFirstTeamId: resultJson.batFirstTeamId,
+            wonToss: wonToss,
+          }, () => {
+
+          });
+        }
+      });
+  }
 
   render() {
     return (
@@ -375,9 +505,9 @@ class LiveMatchScreen extends Component {
             }}>{Constants.APP_TITLE}</Text>
         </View>
         <View style={{
-          paddingTop:20,
-          paddingBottom:20,
-          backgroundColor:colors.WHITE
+          paddingTop: 20,
+          paddingBottom: 20,
+          backgroundColor: colors.WHITE,
         }}>
           <View style={{
             flexDirection: "column",
@@ -399,39 +529,39 @@ class LiveMatchScreen extends Component {
                 this.state.item.teamFirstImage !== null ?
                   this.state.item.teamFirstImage !== "" ?
                     <Image
-                      resizeMode={'cover'}
+                      resizeMode={"cover"}
                       style={{
                         width: 40,
                         height: 40,
                         borderRadius: 20,
                         // marginEnd: 10
                       }}
-                      source={{uri: "https://www.goldendc.demourl.ca/public/uploaded/images/" + this.state.item.teamFirstImage}}/>
+                      source={{ uri: "https://www.goldendc.demourl.ca/public/uploaded/images/" + this.state.item.teamFirstImage }} />
                     :
                     <Image
-                      resizeMode={'cover'}
+                      resizeMode={"cover"}
                       style={{
                         width: 40,
                         height: 40,
                         borderRadius: 20,
                         // marginEnd: 10
                       }}
-                      source={require('../assets/images/ic_top_logo.png')}/>
+                      source={require("../assets/images/ic_top_logo.png")} />
                   :
                   <ImageBackground
-                    resizeMode={'cover'}
+                    resizeMode={"cover"}
                     style={{
                       width: 40,
                       height: 40,
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                    }} source={require('../assets/images/ic_rond_gradiant.png')}>
+                      alignItems: "center",
+                      justifyContent: "center",
+                    }} source={require("../assets/images/ic_rond_gradiant.png")}>
                     <Image
-                      resizeMode={'cover'}
+                      resizeMode={"cover"}
                       style={{
                         width: 20,
                         height: 20,
-                      }} source={require('../assets/images/ic_top_logo.png')}/>
+                      }} source={require("../assets/images/ic_top_logo.png")} />
                   </ImageBackground>
               }
 
@@ -454,7 +584,9 @@ class LiveMatchScreen extends Component {
                     fontSize: 10,
                     color: colors.BLACK,
                   }}>{
-                  this.state.item.teamFirstInning.score + "/" + this.state.item.teamFirstInning.wickets
+                  !this.state.isFirstSessionCompleted ?
+                    this.state.runs + "/" + this.state.wickets
+                    : this.state.item.teamFirstInning.score + "/" + this.state.item.teamFirstInning.wickets
                 }</Text>
                 <Text
                   style={{
@@ -498,39 +630,39 @@ class LiveMatchScreen extends Component {
                 this.state.item.teamSecondImage !== null ?
                   this.state.item.teamSecondImage !== "" ?
                     <Image
-                      resizeMode={'cover'}
+                      resizeMode={"cover"}
                       style={{
                         width: 40,
                         height: 40,
                         borderRadius: 20,
                         // marginEnd: 10
                       }}
-                      source={{uri: "https://www.goldendc.demourl.ca/public/uploaded/images/" + this.state.item.teamSecondImage}}/>
+                      source={{ uri: "https://www.goldendc.demourl.ca/public/uploaded/images/" + this.state.item.teamSecondImage }} />
                     :
                     <Image
-                      resizeMode={'cover'}
+                      resizeMode={"cover"}
                       style={{
                         width: 40,
                         height: 40,
                         borderRadius: 20,
                         // marginEnd: 10
                       }}
-                      source={require('../assets/images/ic_top_logo.png')}/>
+                      source={require("../assets/images/ic_top_logo.png")} />
                   :
                   <ImageBackground
-                    resizeMode={'cover'}
+                    resizeMode={"cover"}
                     style={{
                       width: 40,
                       height: 40,
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                    }} source={require('../assets/images/ic_rond_gradiant.png')}>
+                      alignItems: "center",
+                      justifyContent: "center",
+                    }} source={require("../assets/images/ic_rond_gradiant.png")}>
                     <Image
-                      resizeMode={'cover'}
+                      resizeMode={"cover"}
                       style={{
                         width: 20,
                         height: 20,
-                      }} source={require('../assets/images/ic_top_logo.png')}/>
+                      }} source={require("../assets/images/ic_top_logo.png")} />
                   </ImageBackground>
               }
 
@@ -570,67 +702,73 @@ class LiveMatchScreen extends Component {
         </View>
         <Text
           style={{
-            backgroundColor:colors.STATUS_BAR_COLOR,
+            backgroundColor: colors.STATUS_BAR_COLOR,
             paddingStart: 10,
             paddingTop: 12,
             paddingBottom: 12,
             fontFamily: fontStyle.MontserratBold,
             fontSize: 15,
-            color: colors.WHITE}}>{
-          this.state.item.teamFirstName+" Inning"
+            color: colors.WHITE,
+          }}>{
+          this.state.item.teamFirstName + " Inning"
         }</Text>
         {/* First inning batting */}
         <View style={{
-          backgroundColor:colors.LINE_GRAY_COLOR,
-          flexDirection: 'row',
+          backgroundColor: colors.LINE_GRAY_COLOR,
+          flexDirection: "row",
         }}>
           <Text
             style={{
-              flex:6,
+              flex: 6,
               marginLeft: 10,
               fontFamily: fontStyle.MontserratBold,
               fontSize: 15,
-              color: colors.STATUS_BAR_COLOR}}>{
+              color: colors.STATUS_BAR_COLOR,
+            }}>{
             Constants.BATSMAN
           }</Text>
           <Text
             style={{
-              flex:1,
+              flex: 1,
               marginLeft: 10,
               fontFamily: fontStyle.MontserratMedium,
               fontSize: 12,
-              alignSelf:'center',
-              color: colors.STATUS_BAR_COLOR}}>{
+              alignSelf: "center",
+              color: colors.STATUS_BAR_COLOR,
+            }}>{
             "R"
           }</Text>
           <Text
             style={{
-              flex:1,
+              flex: 1,
               marginLeft: 10,
               fontFamily: fontStyle.MontserratMedium,
               fontSize: 12,
-              alignSelf:'center',
-              color: colors.STATUS_BAR_COLOR}}>{
+              alignSelf: "center",
+              color: colors.STATUS_BAR_COLOR,
+            }}>{
             "B"
           }</Text>
           <Text
             style={{
-              flex:1,
+              flex: 1,
               marginLeft: 10,
               fontFamily: fontStyle.MontserratMedium,
               fontSize: 12,
-              alignSelf:'center',
-              color: colors.STATUS_BAR_COLOR}}>{
+              alignSelf: "center",
+              color: colors.STATUS_BAR_COLOR,
+            }}>{
             "4s"
           }</Text>
           <Text
             style={{
-              flex:1,
+              flex: 1,
               marginLeft: 10,
               fontFamily: fontStyle.MontserratMedium,
               fontSize: 12,
-              alignSelf:'center',
-              color: colors.STATUS_BAR_COLOR}}>{
+              alignSelf: "center",
+              color: colors.STATUS_BAR_COLOR,
+            }}>{
             "6s"
           }</Text>
         </View>
