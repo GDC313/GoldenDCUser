@@ -1047,7 +1047,7 @@ class LandingScreen extends Component {
                     <Text
                       style={{
                         marginLeft: 10,
-                        fontFamily: fontStyle.MontserratBold,
+                        fontFamily: fontStyle.MontserratMedium,
                         fontSize: 14,
                         color: colors.BLUE_COLOR,
                       }}>{
@@ -1056,7 +1056,7 @@ class LandingScreen extends Component {
                     <Text
                       style={{
                         marginLeft: 10,
-                        fontFamily: fontStyle.MontserratMedium,
+                        fontFamily: fontStyle.MontserratBold,
                         fontSize: 14,
                         color: colors.BLACK_0B,
                       }}>{

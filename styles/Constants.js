@@ -7,5 +7,6 @@ export default {
   GROUND_NAME:"Ground Name",
   CITY: "City",
   DATE_TIME:"Date & Time",
+  BATSMAN:"Batsman",
 
 }

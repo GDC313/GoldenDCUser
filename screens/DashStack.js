@@ -34,7 +34,7 @@ export function NavigationStackScreens({ navigation }) {
       <AppAuthStack.Screen
         name="LiveMatchScreen"
         component={LiveMatchScreen}
-        options={{ headerShown: true }}
+        options={{ headerShown: false }}
       />
       <AppAuthStack.Screen
         name="LiveTeamListScreen"
