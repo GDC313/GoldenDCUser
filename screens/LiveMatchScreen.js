@@ -287,6 +287,8 @@ class LiveMatchScreen extends Component {
     this.state = {
       matchId: this.props.route.params.matchId,
       item: this.props.route.params.item,
+      batsman1: null,
+      batsman2: null,
       batsman1Runs: 0,
       batsman1Bowls: 0,
       batsman2Runs: 0,
@@ -311,7 +313,6 @@ class LiveMatchScreen extends Component {
       .once("value")
       .then((result) => {
         let resultJson = JSON.parse(JSON.stringify(result));
-        console.log("resultJson: ", resultJson);
         let isFirstSessionCompleted =
           resultJson.isFirstSessionCompleted !== undefined &&
           resultJson.isFirstSessionCompleted !== null &&
@@ -323,7 +324,6 @@ class LiveMatchScreen extends Component {
 
         if (!isFirstSessionCompleted) {
           if (overs >= resultJson.noOfOvers) {
-            console.log("sfsfdsfsdfsdfsdfsdf");
             isFirstSessionCompleted = true;
             this.setState({
               isFirstSessionCompleted: true,
@@ -356,7 +356,6 @@ class LiveMatchScreen extends Component {
           //TODO: Bowler
           let bowlerData = resultJson.teamSecondSquad.filter(
             (item) => item.bowlingIndex === 1);
-          console.log("bowlerData second: ", bowlerData);
           currentOverBowl = bowlerData[0].currentOverBowl !== undefined ? bowlerData[0].currentOverBowl : 0;
           currentOverBowlRun = bowlerData[0].currentOverBowlRun !== undefined ? bowlerData[0].currentOverBowlRun : 0;
           currentOverBowlerOver = bowlerData[0].currentOverBowlerOver !== undefined ? bowlerData[0].currentOverBowlerOver : 0;
@@ -365,7 +364,6 @@ class LiveMatchScreen extends Component {
           //TODO: Bowler
           let bowlerData = resultJson.teamFirstSquad.filter(
             (item) => item.bowlingIndex === 1);
-          console.log("bowlerData second: ", bowlerData);
           currentOverBowl = bowlerData[0].currentOverBowl !== undefined ? bowlerData[0].currentOverBowl : 0;
           currentOverBowlerOver = bowlerData[0].currentOverBowlerOver !== undefined ? bowlerData[0].currentOverBowlerOver : 0;
           currentOverBowlRun = bowlerData[0].currentOverBowlRun !== undefined ? bowlerData[0].currentOverBowlRun : 0;
@@ -373,6 +371,8 @@ class LiveMatchScreen extends Component {
         }
 
         let currentOverRun = resultJson.currentOverRun !== undefined ? resultJson.currentOverRun : [];
+        let batsman1 = null;
+        let batsman2 = null;
         let batsman1Runs = 0;
         let batsman2Runs = 0;
         let batsman1Bowls = 0;
@@ -380,9 +380,11 @@ class LiveMatchScreen extends Component {
         let isStriker = false;
         let strikerPlayerIndex;
         let nonStrikerPlayerIndex;
+
         if (resultJson.batFirstTeamId === resultJson.teamFirstId) {
           strikerPlayerIndex = resultJson.teamFirstSquad.findIndex(
             (item) => item.strikerIndex === 1);
+          batsman1 = resultJson.teamFirstSquad[strikerPlayerIndex]
           batsman1Runs = resultJson.teamFirstSquad[strikerPlayerIndex].run !== undefined ?
             resultJson.teamFirstSquad[strikerPlayerIndex].run : 0;
           batsman1Bowls = resultJson.teamFirstSquad[strikerPlayerIndex].bowl !== undefined ?
@@ -390,8 +392,9 @@ class LiveMatchScreen extends Component {
           isStriker = resultJson.teamFirstSquad[strikerPlayerIndex].isStriker !== undefined ?
             resultJson.teamFirstSquad[strikerPlayerIndex].isStriker : false;
 
-          nonStrikerPlayerIndex = resultJson.teamSecondSquad.findIndex(
+          nonStrikerPlayerIndex = resultJson.teamFirstSquad.findIndex(
             (item) => item.strikerIndex === 2);
+          batsman2 = resultJson.teamFirstSquad[nonStrikerPlayerIndex]
           batsman2Runs = resultJson.teamFirstSquad[nonStrikerPlayerIndex].run !== undefined ?
             resultJson.teamFirstSquad[nonStrikerPlayerIndex].run : 0;
           batsman2Bowls = resultJson.teamFirstSquad[nonStrikerPlayerIndex].bowl !== undefined ?
@@ -399,6 +402,7 @@ class LiveMatchScreen extends Component {
         } else {
           strikerPlayerIndex = resultJson.teamSecondSquad.findIndex(
             (item) => item.strikerIndex === 1);
+          batsman1 = resultJson.teamSecondSquad[strikerPlayerIndex]
           batsman1Runs = resultJson.teamSecondSquad[strikerPlayerIndex].run !== undefined ?
             resultJson.teamSecondSquad[strikerPlayerIndex].run : 0;
           batsman1Bowls = resultJson.teamSecondSquad[strikerPlayerIndex].bowl !== undefined ?
@@ -408,18 +412,19 @@ class LiveMatchScreen extends Component {
 
           nonStrikerPlayerIndex = resultJson.teamSecondSquad.findIndex(
             (item) => item.strikerIndex === 2);
+          batsman2 = resultJson.teamSecondSquad[nonStrikerPlayerIndex]
           batsman2Runs = resultJson.teamSecondSquad[nonStrikerPlayerIndex].run !== undefined ?
             resultJson.teamSecondSquad[nonStrikerPlayerIndex].run : 0;
-          batsman2Bowls = resultJson.teamFirstSquad[nonStrikerPlayerIndex].bowl !== undefined ?
-            resultJson.teamFirstSquad[nonStrikerPlayerIndex].bowl : 0;
-
+          batsman2Bowls = resultJson.teamSecondSquad[nonStrikerPlayerIndex].bowl !== undefined ?
+            resultJson.teamSecondSquad[nonStrikerPlayerIndex].bowl : 0;
         }
 
-        console.log("isStriker: ", isStriker);
         if (currentOverRun.length >= 6) {
           this.setState({
             isStrikerSelection: isStriker,
             isSelectBowlingModel: true,
+            batsman1: batsman1,
+            batsman2: batsman2,
             currentOverRun: [],
             overs: overs,
             wickets: wickets,
@@ -437,9 +442,10 @@ class LiveMatchScreen extends Component {
             wonToss: wonToss,
           });
         } else {
-          alert(score);
           this.setState({
             isStrikerSelection: isStriker,
+            batsman1: batsman1,
+            batsman2: batsman2,
             batsman1Runs: batsman1Runs,
             runs: score,
             extra: extra,
