@@ -8,5 +8,8 @@ export default {
   CITY: "City",
   DATE_TIME:"Date & Time",
   BATSMAN:"Batsman",
+  BOWLER:"Bowler",
+  TOTAL:"Total",
+  EXTRA:"Extra",
 
 }

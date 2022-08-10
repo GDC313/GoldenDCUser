@@ -287,6 +287,7 @@ class LiveMatchScreen extends Component {
     this.state = {
       matchId: this.props.route.params.matchId,
       item: this.props.route.params.item,
+      bowlerData: null,
       batsman1: null,
       batsman2: null,
       batsman1Runs: 0,
@@ -308,164 +309,198 @@ class LiveMatchScreen extends Component {
 
   componentDidMount() {
     let path = "/liveMatchList/" + this.state.matchId;
-    database().ref(path)
-      .orderByValue()
-      .once("value")
-      .then((result) => {
-        let resultJson = JSON.parse(JSON.stringify(result));
-        let isFirstSessionCompleted =
-          resultJson.isFirstSessionCompleted !== undefined &&
-          resultJson.isFirstSessionCompleted !== null &&
-          resultJson.isFirstSessionCompleted === true;
-        let overs = resultJson.batFirstTeamId === resultJson.teamFirstId ?
-          resultJson.teamFirstInning.overs : resultJson.teamSecondInning.overs;
-        let wickets = resultJson.batFirstTeamId === resultJson.teamFirstId ?
-          resultJson.teamFirstInning.wickets : resultJson.teamSecondInning.wickets;
+    this.refreshBatsmanData(path);
+    // database().ref(path)
+    //   .orderByValue()
+    //   .once("value")
+    //   .then((result) => {
+    //     let resultJson = JSON.parse(JSON.stringify(result));
+    //     this.updateLiveData(resultJson)
+    //   });
+  }
 
-        if (!isFirstSessionCompleted) {
-          if (overs >= resultJson.noOfOvers) {
-            isFirstSessionCompleted = true;
-            this.setState({
-              isFirstSessionCompleted: true,
-            });
-          }
-        }
+  updateLiveData(resultJson) {
+    let isFirstSessionCompleted =
+      resultJson.isFirstSessionCompleted !== undefined &&
+      resultJson.isFirstSessionCompleted !== null &&
+      resultJson.isFirstSessionCompleted === true;
+    let overs = resultJson.batFirstTeamId === resultJson.teamFirstId ?
+      resultJson.teamFirstInning.overs : resultJson.teamSecondInning.overs;
+    let wickets = resultJson.batFirstTeamId === resultJson.teamFirstId ?
+      resultJson.teamFirstInning.wickets : resultJson.teamSecondInning.wickets;
+    let bowlerData = null;
+    if (!isFirstSessionCompleted) {
+      if (overs >= resultJson.noOfOvers) {
+        isFirstSessionCompleted = true;
+        this.setState({
+          isFirstSessionCompleted: true,
+        });
+      }
+    }
 
-        let wonToss = "";
-        if (resultJson.batFirstTeamId === resultJson.teamFirstId) {
-          wonToss = resultJson.teamFirstName + " won the toss and elected to bat";
-        } else {
-          wonToss = resultJson.teamSecondName + " won the toss and elected to bowl";
-        }
-        let score = resultJson.batFirstTeamId === resultJson.teamFirstId ?
-          resultJson.teamFirstInning.score : resultJson.teamSecondInning.score;
+    let wonToss = "";
+    if (resultJson.batFirstTeamId === resultJson.teamFirstId) {
+      wonToss = resultJson.teamFirstName + " won the toss and elected to bat";
+    } else {
+      wonToss = resultJson.teamSecondName + " won the toss and elected to bowl";
+    }
+    let score = resultJson.batFirstTeamId === resultJson.teamFirstId ?
+      resultJson.teamFirstInning.score : resultJson.teamSecondInning.score;
 
-        let extra = resultJson.batFirstTeamId === resultJson.teamFirstId ?
-          resultJson.teamFirstInning.extra ?
-            resultJson.teamFirstInning.extra : 0 :
-          resultJson.teamSecondInning.extra ?
-            resultJson.teamSecondInning.extra : 0;
+    let extra = resultJson.batFirstTeamId === resultJson.teamFirstId ?
+      resultJson.teamFirstInning.extra ?
+        resultJson.teamFirstInning.extra : 0 :
+      resultJson.teamSecondInning.extra ?
+        resultJson.teamSecondInning.extra : 0;
 
-        let currentOverBowl = resultJson.currentOverBowl !== undefined ? resultJson.currentOverBowl : 0;
-        let currentOverBowlerOver = resultJson.currentOverBowlerOver !== undefined ?
-          resultJson.currentOverBowlerOver : 0;
-        let currentOverBowlWickets = resultJson.wickets !== undefined ?
-          resultJson.wickets : 0;
-        let currentOverBowlRun = resultJson.currentOverBowlRun !== undefined ? resultJson.currentOverBowlRun : 0;
-        if (resultJson.batFirstTeamId === resultJson.teamFirstId) {
-          //TODO: Bowler
-          let bowlerData = resultJson.teamSecondSquad.filter(
-            (item) => item.bowlingIndex === 1);
-          currentOverBowl = bowlerData[0].currentOverBowl !== undefined ? bowlerData[0].currentOverBowl : 0;
-          currentOverBowlRun = bowlerData[0].currentOverBowlRun !== undefined ? bowlerData[0].currentOverBowlRun : 0;
-          currentOverBowlerOver = bowlerData[0].currentOverBowlerOver !== undefined ? bowlerData[0].currentOverBowlerOver : 0;
-          currentOverBowlWickets = bowlerData[0].wickets !== undefined ? bowlerData[0].wickets : 0;
-        } else {
-          //TODO: Bowler
-          let bowlerData = resultJson.teamFirstSquad.filter(
-            (item) => item.bowlingIndex === 1);
-          currentOverBowl = bowlerData[0].currentOverBowl !== undefined ? bowlerData[0].currentOverBowl : 0;
-          currentOverBowlerOver = bowlerData[0].currentOverBowlerOver !== undefined ? bowlerData[0].currentOverBowlerOver : 0;
-          currentOverBowlRun = bowlerData[0].currentOverBowlRun !== undefined ? bowlerData[0].currentOverBowlRun : 0;
-          currentOverBowlWickets = bowlerData[0].wickets !== undefined ? bowlerData[0].wickets : 0;
-        }
+    let currentOverBowl = resultJson.currentOverBowl !== undefined ? resultJson.currentOverBowl : 0;
+    let currentOverBowlerOver = resultJson.currentOverBowlerOver !== undefined ?
+      resultJson.currentOverBowlerOver : 0;
+    let currentOverBowlWickets = resultJson.wickets !== undefined ?
+      resultJson.wickets : 0;
+    let currentOverBowlRun = resultJson.currentOverBowlRun !== undefined ? resultJson.currentOverBowlRun : 0;
+    if (resultJson.batFirstTeamId === resultJson.teamFirstId) {
+      //TODO: Bowler
+      bowlerData = resultJson.teamSecondSquad.filter(
+        (item) => item.bowlingIndex === 1);
+      currentOverBowl = bowlerData[0].currentOverBowl !== undefined ? bowlerData[0].currentOverBowl : 0;
+      currentOverBowlRun = bowlerData[0].currentOverBowlRun !== undefined ? bowlerData[0].currentOverBowlRun : 0;
+      currentOverBowlerOver = bowlerData[0].currentOverBowlerOver !== undefined ? bowlerData[0].currentOverBowlerOver : 0;
+      currentOverBowlWickets = bowlerData[0].wickets !== undefined ? bowlerData[0].wickets : 0;
+    } else {
+      //TODO: Bowler
+      bowlerData = resultJson.teamFirstSquad.filter(
+        (item) => item.bowlingIndex === 1);
+      currentOverBowl = bowlerData[0].currentOverBowl !== undefined ? bowlerData[0].currentOverBowl : 0;
+      currentOverBowlerOver = bowlerData[0].currentOverBowlerOver !== undefined ? bowlerData[0].currentOverBowlerOver : 0;
+      currentOverBowlRun = bowlerData[0].currentOverBowlRun !== undefined ? bowlerData[0].currentOverBowlRun : 0;
+      currentOverBowlWickets = bowlerData[0].wickets !== undefined ? bowlerData[0].wickets : 0;
+    }
 
-        let currentOverRun = resultJson.currentOverRun !== undefined ? resultJson.currentOverRun : [];
-        let batsman1 = null;
-        let batsman2 = null;
-        let batsman1Runs = 0;
-        let batsman2Runs = 0;
-        let batsman1Bowls = 0;
-        let batsman2Bowls = 0;
-        let isStriker = false;
-        let strikerPlayerIndex;
-        let nonStrikerPlayerIndex;
+    let currentOverRun = resultJson.currentOverRun !== undefined ? resultJson.currentOverRun : [];
+    let batsman1 = null;
+    let batsman2 = null;
+    let batsman1Runs = 0;
+    let batsman2Runs = 0;
+    let batsman1Bowls = 0;
+    let batsman2Bowls = 0;
+    let isStriker = false;
+    let strikerPlayerIndex;
+    let nonStrikerPlayerIndex;
 
-        if (resultJson.batFirstTeamId === resultJson.teamFirstId) {
-          strikerPlayerIndex = resultJson.teamFirstSquad.findIndex(
-            (item) => item.strikerIndex === 1);
-          batsman1 = resultJson.teamFirstSquad[strikerPlayerIndex]
-          batsman1Runs = resultJson.teamFirstSquad[strikerPlayerIndex].run !== undefined ?
-            resultJson.teamFirstSquad[strikerPlayerIndex].run : 0;
-          batsman1Bowls = resultJson.teamFirstSquad[strikerPlayerIndex].bowl !== undefined ?
-            resultJson.teamFirstSquad[strikerPlayerIndex].bowl : 0;
-          isStriker = resultJson.teamFirstSquad[strikerPlayerIndex].isStriker !== undefined ?
-            resultJson.teamFirstSquad[strikerPlayerIndex].isStriker : false;
+    if (resultJson.batFirstTeamId === resultJson.teamFirstId) {
+      strikerPlayerIndex = resultJson.teamFirstSquad.findIndex(
+        (item) =>
+          item.isStriker !== undefined &&
+          item.isStriker);
+      console.log("strikerPlayerIndex: ", strikerPlayerIndex);
+      batsman1 = resultJson.teamFirstSquad[strikerPlayerIndex];
+      batsman1Runs = resultJson.teamFirstSquad[strikerPlayerIndex].run !== undefined ?
+        resultJson.teamFirstSquad[strikerPlayerIndex].run : 0;
+      batsman1Bowls = resultJson.teamFirstSquad[strikerPlayerIndex].bowl !== undefined ?
+        resultJson.teamFirstSquad[strikerPlayerIndex].bowl : 0;
+      isStriker = resultJson.teamFirstSquad[strikerPlayerIndex].isStriker !== undefined ?
+        resultJson.teamFirstSquad[strikerPlayerIndex].isStriker : false;
 
-          nonStrikerPlayerIndex = resultJson.teamFirstSquad.findIndex(
-            (item) => item.strikerIndex === 2);
-          batsman2 = resultJson.teamFirstSquad[nonStrikerPlayerIndex]
-          batsman2Runs = resultJson.teamFirstSquad[nonStrikerPlayerIndex].run !== undefined ?
-            resultJson.teamFirstSquad[nonStrikerPlayerIndex].run : 0;
-          batsman2Bowls = resultJson.teamFirstSquad[nonStrikerPlayerIndex].bowl !== undefined ?
-            resultJson.teamFirstSquad[nonStrikerPlayerIndex].bowl : 0;
-        } else {
-          strikerPlayerIndex = resultJson.teamSecondSquad.findIndex(
-            (item) => item.strikerIndex === 1);
-          batsman1 = resultJson.teamSecondSquad[strikerPlayerIndex]
-          batsman1Runs = resultJson.teamSecondSquad[strikerPlayerIndex].run !== undefined ?
-            resultJson.teamSecondSquad[strikerPlayerIndex].run : 0;
-          batsman1Bowls = resultJson.teamSecondSquad[strikerPlayerIndex].bowl !== undefined ?
-            resultJson.teamSecondSquad[strikerPlayerIndex].bowl : 0;
-          isStriker = resultJson.teamSecondSquad[strikerPlayerIndex].isStriker !== undefined ?
-            resultJson.teamSecondSquad[strikerPlayerIndex].isStriker : false;
+      nonStrikerPlayerIndex = resultJson.teamFirstSquad.findIndex(
+        (item) =>
+          item.isStriker !== undefined &&
+          !item.isStriker);
+      batsman2 = resultJson.teamFirstSquad[nonStrikerPlayerIndex];
+      batsman2Runs = resultJson.teamFirstSquad[nonStrikerPlayerIndex].run !== undefined ?
+        resultJson.teamFirstSquad[nonStrikerPlayerIndex].run : 0;
+      batsman2Bowls = resultJson.teamFirstSquad[nonStrikerPlayerIndex].bowl !== undefined ?
+        resultJson.teamFirstSquad[nonStrikerPlayerIndex].bowl : 0;
 
-          nonStrikerPlayerIndex = resultJson.teamSecondSquad.findIndex(
-            (item) => item.strikerIndex === 2);
-          batsman2 = resultJson.teamSecondSquad[nonStrikerPlayerIndex]
-          batsman2Runs = resultJson.teamSecondSquad[nonStrikerPlayerIndex].run !== undefined ?
-            resultJson.teamSecondSquad[nonStrikerPlayerIndex].run : 0;
-          batsman2Bowls = resultJson.teamSecondSquad[nonStrikerPlayerIndex].bowl !== undefined ?
-            resultJson.teamSecondSquad[nonStrikerPlayerIndex].bowl : 0;
-        }
+      //TODO: Bowler
 
-        if (currentOverRun.length >= 6) {
-          this.setState({
-            isStrikerSelection: isStriker,
-            isSelectBowlingModel: true,
-            batsman1: batsman1,
-            batsman2: batsman2,
-            currentOverRun: [],
-            overs: overs,
-            wickets: wickets,
-            currentOverBowl: 0,
-            currentOverBowlWickets: 0,
-            currentOverBowlRun: currentOverBowlRun,
-            batsman1Runs: batsman1Runs,
-            runs: score,
-            extra: extra,
-            batsman2Runs: batsman2Runs,
-            batsman1Bowls: batsman1Bowls,
-            batsman2Bowls: batsman2Bowls,
-            totalOvers: resultJson.noOfOvers,
-            batFirstTeamId: resultJson.batFirstTeamId,
-            wonToss: wonToss,
-          });
-        } else {
-          this.setState({
-            isStrikerSelection: isStriker,
-            batsman1: batsman1,
-            batsman2: batsman2,
-            batsman1Runs: batsman1Runs,
-            runs: score,
-            extra: extra,
-            currentOverBowl: currentOverBowl,
-            currentOverBowlRun: currentOverBowlRun,
-            currentOverBowlerOver: currentOverBowlerOver,
-            currentOverBowlWickets: currentOverBowlWickets,
-            overs: overs,
-            wickets: wickets,
-            currentOverRun: currentOverRun,
-            batsman2Runs: batsman2Runs,
-            batsman1Bowls: batsman1Bowls,
-            batsman2Bowls: batsman2Bowls,
-            totalOvers: resultJson.noOfOvers,
-            batFirstTeamId: resultJson.batFirstTeamId,
-            wonToss: wonToss,
-          }, () => {
 
-          });
-        }
+    } else {
+      strikerPlayerIndex = resultJson.teamSecondSquad.findIndex(
+        (item) => item.strikerIndex === 1);
+      batsman1 = resultJson.teamSecondSquad[strikerPlayerIndex];
+      batsman1Runs = resultJson.teamSecondSquad[strikerPlayerIndex].run !== undefined ?
+        resultJson.teamSecondSquad[strikerPlayerIndex].run : 0;
+      batsman1Bowls = resultJson.teamSecondSquad[strikerPlayerIndex].bowl !== undefined ?
+        resultJson.teamSecondSquad[strikerPlayerIndex].bowl : 0;
+      isStriker = resultJson.teamSecondSquad[strikerPlayerIndex].isStriker !== undefined ?
+        resultJson.teamSecondSquad[strikerPlayerIndex].isStriker : false;
+
+      nonStrikerPlayerIndex = resultJson.teamSecondSquad.findIndex(
+        (item) => item.strikerIndex === 2);
+      batsman2 = resultJson.teamSecondSquad[nonStrikerPlayerIndex];
+      batsman2Runs = resultJson.teamSecondSquad[nonStrikerPlayerIndex].run !== undefined ?
+        resultJson.teamSecondSquad[nonStrikerPlayerIndex].run : 0;
+      batsman2Bowls = resultJson.teamSecondSquad[nonStrikerPlayerIndex].bowl !== undefined ?
+        resultJson.teamSecondSquad[nonStrikerPlayerIndex].bowl : 0;
+    }
+    // console.log("batsman1: ", batsman1);
+    // console.log("batsman2: ", batsman2);
+    if (bowlerData.length > 0) {
+      bowlerData = bowlerData[0];
+    } else {
+      bowlerData = null;
+    }
+    console.log("bowlerData: ", bowlerData);
+    // this.refreshBatsmanData(path,batsman1.id)
+    if (currentOverRun.length >= 6) {
+      this.setState({
+        isStrikerSelection: isStriker,
+        isSelectBowlingModel: true,
+        batsman1: batsman1,
+        batsman2: batsman2,
+        bowlerData: bowlerData,
+        currentOverRun: [],
+        overs: overs,
+        wickets: wickets,
+        currentOverBowl: 0,
+        currentOverBowlWickets: 0,
+        currentOverBowlRun: currentOverBowlRun,
+        batsman1Runs: batsman1Runs,
+        runs: score,
+        extra: extra,
+        batsman2Runs: batsman2Runs,
+        batsman1Bowls: batsman1Bowls,
+        batsman2Bowls: batsman2Bowls,
+        totalOvers: resultJson.noOfOvers,
+        batFirstTeamId: resultJson.batFirstTeamId,
+        wonToss: wonToss,
+      });
+    } else {
+      this.setState({
+        isStrikerSelection: isStriker,
+        batsman1: batsman1,
+        batsman2: batsman2,
+        bowlerData: bowlerData,
+        batsman1Runs: batsman1Runs,
+        runs: score,
+        extra: extra,
+        currentOverBowl: currentOverBowl,
+        currentOverBowlRun: currentOverBowlRun,
+        currentOverBowlerOver: currentOverBowlerOver,
+        currentOverBowlWickets: currentOverBowlWickets,
+        overs: overs,
+        wickets: wickets,
+        currentOverRun: currentOverRun,
+        batsman2Runs: batsman2Runs,
+        batsman1Bowls: batsman1Bowls,
+        batsman2Bowls: batsman2Bowls,
+        totalOvers: resultJson.noOfOvers,
+        batFirstTeamId: resultJson.batFirstTeamId,
+        wonToss: wonToss,
+      }, () => {
+      });
+    }
+  }
+
+  refreshBatsmanData(path) {
+    console.log("path: ", path);
+    // console.log("id: ", id);
+    database()
+      .ref(`${path}`)
+      .on("value", snapshot => {
+        console.log("User data: ", snapshot.val());
+        this.updateLiveData(snapshot.val());
       });
   }
 
@@ -632,6 +667,41 @@ class LiveMatchScreen extends Component {
                   }</Text>
                 </View>
               </View>
+              <View style={{
+                flex:1,
+                alignItems:'flex-end',
+                // backgroundColor:'red',
+                marginEnd:10,
+                flexDirection: "column",
+              }}>
+                <Text
+                  style={{
+                    marginLeft: 10,
+                    fontFamily: fontStyle.MontserratMedium,
+                    fontSize: 10,
+                    color: colors.BLUE_COLOR,
+                  }}>{
+                  this.state.item.teamSecondName
+                }</Text>
+                <Text
+                  style={{
+                    marginLeft: 10,
+                    fontFamily: fontStyle.MontserratBold,
+                    fontSize: 10,
+                    color: colors.BLACK_0B,
+                  }}>{
+                  this.state.item.teamSecondInning.score + "/" + this.state.item.teamSecondInning.wickets
+                }</Text>
+                <Text
+                  style={{
+                    marginLeft: 10,
+                    fontFamily: fontStyle.MontserratRegular,
+                    fontSize: 10,
+                    color: colors.BLACK_0B,
+                  }}>{
+                  this.state.item.teamSecondInning.overs + " Ov"
+                }</Text>
+              </View>
               {
                 this.state.item.teamSecondImage !== null ?
                   this.state.item.teamSecondImage !== "" ?
@@ -671,38 +741,6 @@ class LiveMatchScreen extends Component {
                       }} source={require("../assets/images/ic_top_logo.png")} />
                   </ImageBackground>
               }
-
-              <View style={{
-                flexDirection: "column",
-              }}>
-                <Text
-                  style={{
-                    marginLeft: 10,
-                    fontFamily: fontStyle.MontserratMedium,
-                    fontSize: 10,
-                    color: colors.BLUE_COLOR,
-                  }}>{
-                  this.state.item.teamSecondName
-                }</Text>
-                <Text
-                  style={{
-                    marginLeft: 10,
-                    fontFamily: fontStyle.MontserratBold,
-                    fontSize: 10,
-                    color: colors.BLACK_0B,
-                  }}>{
-                  this.state.item.teamSecondInning.score + "/" + this.state.item.teamSecondInning.wickets
-                }</Text>
-                <Text
-                  style={{
-                    marginLeft: 10,
-                    fontFamily: fontStyle.MontserratRegular,
-                    fontSize: 10,
-                    color: colors.BLACK_0B,
-                  }}>{
-                  this.state.item.teamSecondInning.overs + " Ov"
-                }</Text>
-              </View>
             </View>
           </View>
         </View>
@@ -718,67 +756,469 @@ class LiveMatchScreen extends Component {
           }}>{
           this.state.item.teamFirstName + " Inning"
         }</Text>
-        {/* First inning batting */}
         <View style={{
-          backgroundColor: colors.LINE_GRAY_COLOR,
-          flexDirection: "row",
+          flex: 1,
+          backgroundColor: colors.WHITE,
         }}>
-          <Text
-            style={{
-              flex: 6,
-              marginLeft: 10,
-              fontFamily: fontStyle.MontserratBold,
-              fontSize: 15,
-              color: colors.STATUS_BAR_COLOR,
-            }}>{
-            Constants.BATSMAN
-          }</Text>
-          <Text
-            style={{
-              flex: 1,
-              marginLeft: 10,
-              fontFamily: fontStyle.MontserratMedium,
-              fontSize: 12,
-              alignSelf: "center",
-              color: colors.STATUS_BAR_COLOR,
-            }}>{
-            "R"
-          }</Text>
-          <Text
-            style={{
-              flex: 1,
-              marginLeft: 10,
-              fontFamily: fontStyle.MontserratMedium,
-              fontSize: 12,
-              alignSelf: "center",
-              color: colors.STATUS_BAR_COLOR,
-            }}>{
-            "B"
-          }</Text>
-          <Text
-            style={{
-              flex: 1,
-              marginLeft: 10,
-              fontFamily: fontStyle.MontserratMedium,
-              fontSize: 12,
-              alignSelf: "center",
-              color: colors.STATUS_BAR_COLOR,
-            }}>{
-            "4s"
-          }</Text>
-          <Text
-            style={{
-              flex: 1,
-              marginLeft: 10,
-              fontFamily: fontStyle.MontserratMedium,
-              fontSize: 12,
-              alignSelf: "center",
-              color: colors.STATUS_BAR_COLOR,
-            }}>{
-            "6s"
-          }</Text>
-        </View>
+          {/* First inning batting */}
+          <View style={{
+            paddingTop: 8,
+            paddingBottom: 8,
+            backgroundColor: "rgba(118,176,67,0.1)",
+            flexDirection: "row",
+          }}>
+            <Text
+              style={{
+                flex: 6,
+                marginLeft: 10,
+                fontFamily: fontStyle.MontserratBold,
+                fontSize: 15,
+                color: colors.STATUS_BAR_COLOR,
+              }}>{
+              Constants.BATSMAN
+            }</Text>
+            <Text
+              style={{
+                flex: 1,
+                marginLeft: 10,
+                fontFamily: fontStyle.MontserratMedium,
+                fontSize: 12,
+                alignSelf: "center",
+                color: colors.STATUS_BAR_COLOR,
+              }}>{
+              "R"
+            }</Text>
+            <Text
+              style={{
+                flex: 1,
+                marginLeft: 10,
+                fontFamily: fontStyle.MontserratMedium,
+                fontSize: 12,
+                alignSelf: "center",
+                color: colors.STATUS_BAR_COLOR,
+              }}>{
+              "B"
+            }</Text>
+            <Text
+              style={{
+                flex: 1,
+                marginLeft: 10,
+                fontFamily: fontStyle.MontserratMedium,
+                fontSize: 12,
+                alignSelf: "center",
+                color: colors.STATUS_BAR_COLOR,
+              }}>{
+              "4s"
+            }</Text>
+            <Text
+              style={{
+                flex: 1,
+                marginLeft: 10,
+                fontFamily: fontStyle.MontserratMedium,
+                fontSize: 12,
+                alignSelf: "center",
+                color: colors.STATUS_BAR_COLOR,
+              }}>{
+              "6s"
+            }</Text>
+          </View>
+          <View style={{
+            paddingTop: 10,
+            paddingBottom: 10,
+            backgroundColor: colors.WHITE,
+            flexDirection: "row",
+          }}>
+            <Text
+              style={{
+                flex: 6,
+                marginLeft: 10,
+                fontFamily: fontStyle.MontserratMedium,
+                fontSize: 15,
+                color: colors.STATUS_BAR_COLOR,
+              }}>{
+              this.state.batsman1 !== undefined &&
+              this.state.batsman1 !== null ?
+                this.state.batsman1.isStriker ?
+                  this.state.batsman1.name + "*" :
+                  this.state.batsman1.name
+                : ""
+            }</Text>
+            <Text
+              style={{
+                flex: 1,
+                marginLeft: 10,
+                fontFamily: fontStyle.MontserratBold,
+                fontSize: 12,
+                alignSelf: "center",
+                color: colors.STATUS_BAR_COLOR,
+              }}>{
+              this.state.batsman1 !== undefined &&
+              this.state.batsman1 !== null &&
+              this.state.batsman1.run !== undefined &&
+              this.state.batsman1.run !== null ?
+                this.state.batsman1.run : "0"
+            }</Text>
+            <Text
+              style={{
+                flex: 1,
+                marginLeft: 10,
+                fontFamily: fontStyle.MontserratMedium,
+                fontSize: 12,
+                alignSelf: "center",
+                color: colors.STATUS_BAR_COLOR,
+              }}>{
+              this.state.batsman1 !== undefined &&
+              this.state.batsman1 !== null &&
+              this.state.batsman1.bowl !== undefined &&
+              this.state.batsman1.bowl !== null ?
+                this.state.batsman1.bowl : "0"
+            }</Text>
+            <Text
+              style={{
+                flex: 1,
+                marginLeft: 10,
+                fontFamily: fontStyle.MontserratMedium,
+                fontSize: 12,
+                alignSelf: "center",
+                color: colors.STATUS_BAR_COLOR,
+              }}>{
+              this.state.batsman1 !== undefined &&
+              this.state.batsman1 !== null &&
+              this.state.batsman1.four !== undefined &&
+              this.state.batsman1.four !== null ?
+                this.state.batsman1.four : "0"
+            }</Text>
+            <Text
+              style={{
+                flex: 1,
+                marginLeft: 10,
+                fontFamily: fontStyle.MontserratMedium,
+                fontSize: 12,
+                alignSelf: "center",
+                color: colors.STATUS_BAR_COLOR,
+              }}>{
+              this.state.batsman1 !== undefined &&
+              this.state.batsman1 !== null &&
+              this.state.batsman1.six !== undefined &&
+              this.state.batsman1.six !== null ?
+                this.state.batsman1.six : "0"
+            }</Text>
+          </View>
+          <View style={{
+            paddingBottom: 10,
+            backgroundColor: colors.WHITE,
+            flexDirection: "row",
+          }}>
+            <Text
+              style={{
+                flex: 6,
+                marginLeft: 10,
+                fontFamily: fontStyle.MontserratMedium,
+                fontSize: 15,
+                color: colors.STATUS_BAR_COLOR,
+              }}>{
+              this.state.batsman2 !== undefined &&
+              this.state.batsman2 !== null ?
+                this.state.batsman2.isStriker ?
+                  this.state.batsman2.name + "*" :
+                  this.state.batsman2.name
+                : ""
+            }</Text>
+            <Text
+              style={{
+                flex: 1,
+                marginLeft: 10,
+                fontFamily: fontStyle.MontserratBold,
+                fontSize: 12,
+                alignSelf: "center",
+                color: colors.STATUS_BAR_COLOR,
+              }}>{
+              this.state.batsman2 !== undefined &&
+              this.state.batsman2 !== null &&
+              this.state.batsman2.run !== undefined &&
+              this.state.batsman2.run !== null ?
+                this.state.batsman2.run : "0"
+            }</Text>
+            <Text
+              style={{
+                flex: 1,
+                marginLeft: 10,
+                fontFamily: fontStyle.MontserratMedium,
+                fontSize: 12,
+                alignSelf: "center",
+                color: colors.STATUS_BAR_COLOR,
+              }}>{
+              this.state.batsman2 !== undefined &&
+              this.state.batsman2 !== null &&
+              this.state.batsman2.bowl !== undefined &&
+              this.state.batsman2.bowl !== null ?
+                this.state.batsman2.bowl : "0"
+            }</Text>
+            <Text
+              style={{
+                flex: 1,
+                marginLeft: 10,
+                fontFamily: fontStyle.MontserratMedium,
+                fontSize: 12,
+                alignSelf: "center",
+                color: colors.STATUS_BAR_COLOR,
+              }}>{
+              this.state.batsman2 !== undefined &&
+              this.state.batsman2 !== null &&
+              this.state.batsman2.four !== undefined &&
+              this.state.batsman2.four !== null ?
+                this.state.batsman2.four : "0"
+            }</Text>
+            <Text
+              style={{
+                flex: 1,
+                marginLeft: 10,
+                fontFamily: fontStyle.MontserratMedium,
+                fontSize: 12,
+                alignSelf: "center",
+                color: colors.STATUS_BAR_COLOR,
+              }}>{
+              this.state.batsman2 !== undefined &&
+              this.state.batsman2 !== null &&
+              this.state.batsman2.six !== undefined &&
+              this.state.batsman2.six !== null ?
+                this.state.batsman2.six : "0"
+            }</Text>
+          </View>
+          <View style={{
+            paddingBottom: 10,
+            backgroundColor: colors.WHITE,
+            flexDirection: "row",
+          }}>
+            <Text
+              style={{
+                flex: 6,
+                marginLeft: 10,
+                fontFamily: fontStyle.MontserratMedium,
+                fontSize: 15,
+                color: colors.STATUS_BAR_COLOR,
+              }}>{Constants.EXTRA}</Text>
+            <Text
+              style={{
+                flex: 1,
+                marginLeft: 10,
+                fontFamily: fontStyle.MontserratBold,
+                fontSize: 12,
+                alignSelf: "center",
+                color: colors.STATUS_BAR_COLOR,
+              }}>{this.state.extra}</Text>
+            <Text
+              style={{
+                flex: 1,
+                marginLeft: 10,
+                fontFamily: fontStyle.MontserratMedium,
+                fontSize: 12,
+                alignSelf: "center",
+                color: colors.STATUS_BAR_COLOR,
+              }}>{""}</Text>
+            <Text
+              style={{
+                flex: 1,
+                marginLeft: 10,
+                fontFamily: fontStyle.MontserratMedium,
+                fontSize: 12,
+                alignSelf: "center",
+                color: colors.STATUS_BAR_COLOR,
+              }}>{""}</Text>
+            <Text
+              style={{
+                flex: 1,
+                marginLeft: 10,
+                fontFamily: fontStyle.MontserratMedium,
+                fontSize: 12,
+                alignSelf: "center",
+                color: colors.STATUS_BAR_COLOR,
+              }}>{""}</Text>
+          </View>
 
+          <View style={{
+            paddingBottom: 10,
+            backgroundColor: colors.WHITE,
+            flexDirection: "row",
+          }}>
+            <Text
+              style={{
+                flex: 1.3,
+                // backgroundColor: "red",
+                marginLeft: 10,
+                fontFamily: fontStyle.MontserratBold,
+                fontSize: 15,
+                color: colors.STATUS_BAR_COLOR,
+              }}>{Constants.TOTAL}</Text>
+            <View style={{
+              flex: 1,
+              flexDirection:'row'
+            }}>
+              <Text
+                style={{
+                  fontFamily: fontStyle.MontserratBold,
+                  fontSize: 12,
+                  alignSelf: "center",
+                  color: colors.STATUS_BAR_COLOR,
+                }}>{
+                !this.state.isFirstSessionCompleted ?
+                  this.state.runs
+                  : this.state.item.teamFirstInning.score}</Text>
+              <Text
+                style={{
+                  marginStart:3,
+                  fontFamily: fontStyle.MontserratRegular,
+                  fontSize: 12,
+                  alignSelf: "center",
+                  color: colors.STATUS_BAR_COLOR,
+                }}>{
+                !this.state.isFirstSessionCompleted ?
+                  "(" + this.state.wickets + "Wkt, "+this.state.overs+" OV)"
+                  : "(" + this.state.item.teamFirstInning.wickets + "Wkt, "+
+                  this.state.item.teamFirstInning.wickets +" OV)"}</Text>
+            </View>
+
+          </View>
+
+          {/*Bowler Details*/}
+          <View style={{
+            paddingTop: 8,
+            paddingBottom: 8,
+            backgroundColor: "rgba(118,176,67,0.1)",
+            flexDirection: "row",
+          }}>
+            <Text
+              style={{
+                flex: 6,
+                marginLeft: 10,
+                fontFamily: fontStyle.MontserratBold,
+                fontSize: 15,
+                color: colors.STATUS_BAR_COLOR,
+              }}>{
+              Constants.BOWLER
+            }</Text>
+            <Text
+              style={{
+                flex: 1,
+                marginLeft: 10,
+                fontFamily: fontStyle.MontserratMedium,
+                fontSize: 12,
+                alignSelf: "center",
+                color: colors.STATUS_BAR_COLOR,
+              }}>{
+              "O"
+            }</Text>
+            <Text
+              style={{
+                flex: 1,
+                marginLeft: 10,
+                fontFamily: fontStyle.MontserratMedium,
+                fontSize: 12,
+                alignSelf: "center",
+                color: colors.STATUS_BAR_COLOR,
+              }}>{
+              "R"
+            }</Text>
+            <Text
+              style={{
+                flex: 1,
+                marginLeft: 10,
+                fontFamily: fontStyle.MontserratMedium,
+                fontSize: 12,
+                alignSelf: "center",
+                color: colors.STATUS_BAR_COLOR,
+              }}>{
+              "W"
+            }</Text>
+            <Text
+              style={{
+                flex: 1,
+                marginLeft: 10,
+                fontFamily: fontStyle.MontserratMedium,
+                fontSize: 12,
+                alignSelf: "center",
+                color: colors.STATUS_BAR_COLOR,
+              }}>{
+              ""
+            }</Text>
+          </View>
+          <View style={{
+            paddingTop: 8,
+            paddingBottom: 8,
+            // backgroundColor: "rgba(118,176,67,0.1)",
+            flexDirection: "row",
+          }}>
+            <Text
+              style={{
+                flex: 6,
+                marginLeft: 10,
+                fontFamily: fontStyle.MontserratMedium,
+                fontSize: 15,
+                color: colors.STATUS_BAR_COLOR,
+              }}>{
+              this.state.bowlerData !== undefined &&
+              this.state.bowlerData !== null ?
+              this.state.bowlerData.name : ""
+            }</Text>
+            <Text
+              style={{
+                flex: 1,
+                marginLeft: 10,
+                fontFamily: fontStyle.MontserratBold,
+                fontSize: 12,
+                alignSelf: "center",
+                color: colors.STATUS_BAR_COLOR,
+              }}>{
+              this.state.bowlerData !== undefined &&
+              this.state.bowlerData !== null ?
+                this.state.bowlerData.currentOverBowl>=6?
+                this.state.bowlerData.currentOverBowlerOver + ".0":
+                  this.state.bowlerData.currentOverBowlerOver +
+                  "."+this.state.bowlerData.currentOverBowl : ""
+            }</Text>
+            <Text
+              style={{
+                flex: 1,
+                marginLeft: 10,
+                fontFamily: fontStyle.MontserratMedium,
+                fontSize: 12,
+                alignSelf: "center",
+                color: colors.STATUS_BAR_COLOR,
+              }}>{
+              this.state.bowlerData !== undefined &&
+              this.state.bowlerData !== null &&
+              this.state.bowlerData.currentOverBowlRun !== undefined &&
+              this.state.bowlerData.currentOverBowlRun !== null ?
+                this.state.bowlerData.currentOverBowlRun : "0"
+            }</Text>
+            <Text
+              style={{
+                flex: 1,
+                marginLeft: 10,
+                fontFamily: fontStyle.MontserratMedium,
+                fontSize: 12,
+                alignSelf: "center",
+                color: colors.STATUS_BAR_COLOR,
+              }}>{
+              this.state.bowlerData !== undefined &&
+              this.state.bowlerData !== null &&
+              this.state.bowlerData.wickets !== undefined &&
+              this.state.bowlerData.wickets !== null ?
+                this.state.bowlerData.wickets : "0"
+            }</Text>
+            <Text
+              style={{
+                flex: 1,
+                marginLeft: 10,
+                fontFamily: fontStyle.MontserratMedium,
+                fontSize: 12,
+                alignSelf: "center",
+                color: colors.STATUS_BAR_COLOR,
+              }}>{
+              ""
+            }</Text>
+          </View>
+        </View>
       </View>
     );
   }
